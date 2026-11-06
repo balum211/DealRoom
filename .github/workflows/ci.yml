@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - name: Unit, graph, MCP and LLM-path tests (offline, no key)
+        run: pytest -q
+      - name: Quick evaluation
+        run: python eval/run_eval.py --quick
+      - name: App boots and runs the committee headless
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          at = AppTest.from_file("app.py", default_timeout=600).run()
+          assert not at.exception, at.exception
+          [b for b in at.button if b.label == "Convene the committee"][0].click().run()
+          assert not at.exception, at.exception
+          assert [m for m in at.metric], "no conviction scores rendered"
+          print("ok")
+          PY
