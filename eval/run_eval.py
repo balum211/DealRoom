@@ -5,11 +5,13 @@
     python eval/run_eval.py --quick       # fewer committee runs (CI)
 
 Measures:
-1. Retrieval hit@5 of the Researcher's search tool on 25 labelled 10-K questions (from Week 2).
+1. Retrieval hit@5 and MRR of the Researcher's search tool on 25 labelled 10-K questions (from Week 2).
 2. Quant accuracy: every metric the Quant agent extracts vs the value printed in the filing.
 3. Committee runs: citation faithfulness, balance, latency, and whether the Verifier catches an
    injected false claim (stress test).
 4. Guardrails: blocked vs allowed requests.
+   Cost and latency per memo (tokens, estimated USD, median and p95 seconds) come from the agent trace.
+   --feedback replays requests from human review feedback as regression cases.
 5. Baseline comparison: plain RAG (our Week 2 FilingSight graph) vs the DealRoom committee.
 """
 from __future__ import annotations
@@ -26,6 +28,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 os.environ.setdefault("DR_MEMORY_PATH", str(Path(tempfile.gettempdir()) / "dealroom_eval_memory.json"))
+os.environ.setdefault("DR_TRACE_DIR", str(Path(tempfile.gettempdir()) / "dealroom_eval_traces"))
+os.environ.setdefault("DR_FEEDBACK_PATH", str(Path(tempfile.gettempdir()) / "dealroom_eval_feedback.jsonl"))
 
 from langchain_core.documents import Document  # noqa: E402
 
@@ -34,6 +38,7 @@ from dealroom.agents import _NEG, _POS  # noqa: E402
 from dealroom.graph import DealRoom  # noqa: E402
 from dealroom.guardrails import check_input  # noqa: E402
 from dealroom.metrics import extract_metrics  # noqa: E402
+from dealroom.observability import load_feedback, run_totals  # noqa: E402
 from dealroom.tools import search_filings  # noqa: E402
 from filingsight.evaluation import load_questions, score_retrieval  # noqa: E402
 
@@ -108,8 +113,11 @@ def eval_committee(room: DealRoom, prompts: list[str], mode: str) -> dict:
         companies = s.get("plan", {}).get("companies", [])
         bulls = [c for c in final if c["side"] == "bull" and c["status"] == "supported"]
         bears = [c for c in final if c["side"] == "bear" and c["status"] == "supported"]
+        totals = run_totals(s.get("trace", []))
         runs.append({
             "question": q, "seconds": s["elapsed_s"],
+            "llm_calls": totals["llm_calls"], "tokens": totals["tokens_in"] + totals["tokens_out"], "cost_usd": totals["cost_usd"],
+            "research_retries": sum(t.get("research_retries", 0) for t in s.get("trace", [])),
             "claims_final": len(final), "supported_final": sum(c["status"] == "supported" for c in final),
             "injected_caught": bool(injected) and all(c["status"] in ("unsupported", "dropped") for c in injected),
             "retries": s.get("attempts", 0),
@@ -126,6 +134,9 @@ def eval_committee(room: DealRoom, prompts: list[str], mode: str) -> dict:
         "balanced_rate": round(sum(r["balanced"] for r in runs) / n, 3),
         "coverage_rate": round(sum(r["all_companies_covered"] for r in runs) / n, 3),
         "median_seconds": round(statistics.median(r["seconds"] for r in runs), 1),
+        "p95_seconds": round(sorted(r["seconds"] for r in runs)[min(n - 1, int(0.95 * n))], 1),
+        "avg_tokens": round(statistics.mean(r["tokens"] for r in runs)),
+        "avg_cost_usd": round(statistics.mean(r["cost_usd"] for r in runs), 5),
         "avg_cited_pages": round(statistics.mean(r["cited_pages"] for r in runs), 1),
     }
 
@@ -169,9 +180,12 @@ def write_report(res: dict) -> str:
         f"| Injected false claim caught by the Verifier | **{pct(c['injected_caught_rate'])}** | 100% |",
         f"| Quant metrics matching the filing | **{q['correct']}/{q['metrics']}** | all |",
         f"| Researcher retrieval hit@5 ({r['questions']} labelled questions) | **{pct(r['hit_at_5'])}** | ≥ 90% |",
+        f"| Researcher retrieval MRR (rank of first relevant passage) | **{r['mrr']:.2f}** | ≥ 0.70 |",
         f"| Balanced debate (≥ 3 verified points per side) | **{pct(c['balanced_rate'])}** | 100% |",
         f"| Guardrail decisions correct | **{g['correct']}/{g['cases']}** | all |",
-        f"| Median time per memo | **{c['median_seconds']} s** | < 180 s |", "",
+        f"| Median time per memo | **{c['median_seconds']} s** (p95 {c['p95_seconds']} s) | < 180 s |",
+        f"| LLM tokens per memo | **{c['avg_tokens']:,}** | tracked |",
+        f"| Estimated cost per memo | **${c['avg_cost_usd']:.4f}** | < $0.05 |", "",
         "## Plain RAG (Week 2 FilingSight) vs DealRoom committee", "",
         "Same prompts for both. Plain RAG returns one answer; DealRoom plans, debates and verifies.", "",
         "| | Plain RAG | DealRoom |", "|---|---|---|",
@@ -180,10 +194,12 @@ def write_report(res: dict) -> str:
         f"| Every claim checked against its source | no | yes ({pct(c['citation_faithfulness'])} supported) |",
         f"| Median seconds | {b['median_seconds']} | {c['median_seconds']} |", "",
         "## Committee runs", "",
-        "| Request | Verdict | Final claims verified | Retries | Seconds |", "|---|---|---|---|---|",
+        "| Request | Verdict | Final claims verified | Verifier retries | Re-searches | Tokens | Seconds |",
+        "|---|---|---|---|---|---|---|",
     ]
     for run in c["runs"]:
-        lines.append(f"| {run['question']} | {run['verdict']} | {run['supported_final']}/{run['claims_final']} | {run['retries']} | {run['seconds']} |")
+        lines.append(f"| {run['question']} | {run['verdict']} | {run['supported_final']}/{run['claims_final']} | {run['retries']} | "
+                     f"{run['research_retries']} | {run['tokens']:,} | {run['seconds']} |")
     lines += ["", "## Quant accuracy", "", "| Company | Metric | Filing (FY20, FY21) | Extracted | OK |", "|---|---|---|---|---|"]
     for row in q["rows"]:
         lines.append(f"| {row['company']} | {row['metric']} | {row['expected']} | {row['got']} | {'✅' if row['ok'] else '❌'} |")
@@ -199,8 +215,12 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", default="offline", choices=["offline", "auto"])
     ap.add_argument("--quick", action="store_true")
+    ap.add_argument("--feedback", action="store_true",
+                    help="also replay requests from human review feedback (data/eval/feedback.jsonl) as regression cases")
     args = ap.parse_args()
-    prompts = COMMITTEE_PROMPTS[:2] if args.quick else COMMITTEE_PROMPTS
+    prompts = COMMITTEE_PROMPTS[:2] if args.quick else list(COMMITTEE_PROMPTS)
+    if args.feedback:
+        prompts += [q for q in dict.fromkeys(r["question"] for r in load_feedback(ROOT / "data" / "eval" / "feedback.jsonl") if r.get("question")) if q not in prompts]
     room = DealRoom()
     res = {
         "agents": "LLM (" + config.llm_label() + ")" if config.llm_enabled(args.mode) else "offline (no API key)",
@@ -215,6 +235,8 @@ def main() -> None:
     (config.RESULTS_DIR / "results.json").write_text(json.dumps(res, indent=2), encoding="utf-8")
     report = write_report(res)
     (config.RESULTS_DIR / "summary.md").write_text(report, encoding="utf-8")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252
     print(report)
 
 

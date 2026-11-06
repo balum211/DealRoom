@@ -37,3 +37,7 @@ Structure: "## Summary" (3 sentences), "## Key metrics" (short bullets), "## Bul
 Rules: cite evidence ids in square brackets like [E3] after every factual sentence, using only the ids \
 given. Numbers exactly as given. Never tell the reader to buy or sell; use the conviction scores. \
 Tailor emphasis to the reviewer profile. If reviewer notes are present, address them."""
+
+REFORMULATE_SYSTEM = """You rewrite search queries for a hybrid (BM25 + vector) search over SEC 10-K filings.
+The first search for this sub-question returned weak results. Return ONE better query: use the vocabulary a
+10-K would use (line items, risk factor wording, MD&A terms), keep the company name, no quotes, no explanation."""

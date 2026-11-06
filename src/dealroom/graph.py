@@ -108,7 +108,8 @@ class DealRoom:
 
     @staticmethod
     def new_thread() -> dict:
-        return {"configurable": {"thread_id": str(uuid.uuid4())}}
+        # run_name and tags label the run in LangSmith when LANGSMITH_TRACING=true
+        return {"configurable": {"thread_id": str(uuid.uuid4())}, "run_name": "DealRoom committee", "tags": ["dealroom"]}
 
     def stream(self, inputs: dict | Command, config: dict):
         """Yield (node, update) pairs as each agent finishes."""

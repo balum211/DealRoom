@@ -1,6 +1,6 @@
 {
   "agents": "offline (no API key)",
-  "generated": "2026-11-06 04:45",
+  "generated": "2026-11-06 00:12",
   "retrieval": {
     "questions": 20,
     "hit_at_5": 0.95,
@@ -220,7 +220,11 @@
     "runs": [
       {
         "question": "Should a growth fund prefer Uber or Lyft based on their FY2021 10-Ks?",
-        "seconds": 18.06,
+        "seconds": 20.57,
+        "llm_calls": 0,
+        "tokens": 0,
+        "cost_usd": 0.0,
+        "research_retries": 0,
         "claims_final": 9,
         "supported_final": 9,
         "injected_caught": true,
@@ -232,19 +236,27 @@
       },
       {
         "question": "Is Uber's path to profitability credible?",
-        "seconds": 8.85,
+        "seconds": 12.46,
+        "llm_calls": 0,
+        "tokens": 0,
+        "cost_usd": 0.0,
+        "research_retries": 1,
         "claims_final": 9,
         "supported_final": 9,
         "injected_caught": true,
         "retries": 1,
         "balanced": true,
         "all_companies_covered": true,
-        "cited_pages": 5,
+        "cited_pages": 6,
         "verdict": "Uber: conviction 4.0/5 for a growth mandate."
       },
       {
         "question": "What are Lyft's biggest risks, and do its 2021 results offset them?",
-        "seconds": 8.17,
+        "seconds": 10.01,
+        "llm_calls": 0,
+        "tokens": 0,
+        "cost_usd": 0.0,
+        "research_retries": 0,
         "claims_final": 9,
         "supported_final": 9,
         "injected_caught": true,
@@ -256,7 +268,11 @@
       },
       {
         "question": "Compare Uber and Lyft on cash burn and liquidity.",
-        "seconds": 16.34,
+        "seconds": 22.8,
+        "llm_calls": 0,
+        "tokens": 0,
+        "cost_usd": 0.0,
+        "research_retries": 1,
         "claims_final": 9,
         "supported_final": 9,
         "injected_caught": true,
@@ -268,7 +284,11 @@
       },
       {
         "question": "How exposed are Uber and Lyft to driver classification rules?",
-        "seconds": 16.82,
+        "seconds": 20.59,
+        "llm_calls": 0,
+        "tokens": 0,
+        "cost_usd": 0.0,
+        "research_retries": 0,
         "claims_final": 9,
         "supported_final": 9,
         "injected_caught": true,
@@ -280,7 +300,11 @@
       },
       {
         "question": "Is Lyft's 2021 recovery durable?",
-        "seconds": 8.64,
+        "seconds": 10.67,
+        "llm_calls": 0,
+        "tokens": 0,
+        "cost_usd": 0.0,
+        "research_retries": 0,
         "claims_final": 9,
         "supported_final": 9,
         "injected_caught": true,
@@ -295,49 +319,52 @@
     "injected_caught_rate": 1.0,
     "balanced_rate": 1.0,
     "coverage_rate": 1.0,
-    "median_seconds": 12.6,
-    "avg_cited_pages": 7.3
+    "median_seconds": 16.5,
+    "p95_seconds": 22.8,
+    "avg_tokens": 0,
+    "avg_cost_usd": 0.0,
+    "avg_cited_pages": 7.5
   },
   "baseline": {
     "runs": [
       {
         "question": "Should a growth fund prefer Uber or Lyft based on their FY2021 10-Ks?",
-        "seconds": 2.67,
+        "seconds": 4.62,
         "route": "refused",
         "cited_pages": 5,
         "both_sides": false
       },
       {
         "question": "Is Uber's path to profitability credible?",
-        "seconds": 1.13,
+        "seconds": 1.98,
         "route": "refused",
         "cited_pages": 3,
         "both_sides": false
       },
       {
         "question": "What are Lyft's biggest risks, and do its 2021 results offset them?",
-        "seconds": 1.04,
+        "seconds": 1.86,
         "route": "refused",
         "cited_pages": 5,
         "both_sides": false
       },
       {
         "question": "Compare Uber and Lyft on cash burn and liquidity.",
-        "seconds": 2.8,
+        "seconds": 4.57,
         "route": "refused",
         "cited_pages": 5,
         "both_sides": false
       },
       {
         "question": "How exposed are Uber and Lyft to driver classification rules?",
-        "seconds": 6.61,
+        "seconds": 4.63,
         "route": "answered",
         "cited_pages": 5,
         "both_sides": false
       },
       {
         "question": "Is Lyft's 2021 recovery durable?",
-        "seconds": 4.08,
+        "seconds": 2.38,
         "route": "refused",
         "cited_pages": 5,
         "both_sides": false
@@ -345,6 +372,6 @@
     ],
     "both_sides_rate": 0.0,
     "avg_cited_pages": 4.7,
-    "median_seconds": 2.7
+    "median_seconds": 3.5
   }
 }

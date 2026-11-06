@@ -51,7 +51,10 @@ def _use_llm(state: dict) -> bool:
 
 
 def _trace(node: str, summary: str, t0: float, **extra) -> dict:
-    return {"trace": [{"node": node, "summary": summary, "ms": round((time.perf_counter() - t0) * 1000), **extra}]}
+    from .llm import take_usage
+
+    entry = {"node": node, "summary": summary, "ms": round((time.perf_counter() - t0) * 1000), **take_usage(), **extra}
+    return {"trace": [entry]}
 
 
 def _norm(text: str) -> str:
@@ -162,6 +165,7 @@ def researcher(state: dict) -> dict:
 
         with ThreadPoolExecutor(max_workers=4) as pool:
             results = list(pool.map(run, topics))
+    results, retried = _research_again(state, results)
     evidence, seen = [], set()
     for _, hits in results:
         for e in hits:
@@ -171,8 +175,44 @@ def researcher(state: dict) -> dict:
             e["id"] = f"E{len(evidence) + 1}"
             evidence.append(e)
     pages = len({(e["company"], e["page"]) for e in evidence})
+    again = f" · {retried} weak result(s) re-searched with a reformulated query" if retried else ""
     return {"evidence": evidence,
-            **_trace("researcher", f"{len(topics)} searches via {via} · {len(evidence)} passages from {pages} filing pages", t0)}
+            **_trace("researcher", f"{len(topics)} searches via {via}{again} · {len(evidence)} passages from {pages} filing pages",
+                     t0, research_retries=retried)}
+
+
+_STOP = re.compile(r"\b(what|which|how|why|is|are|was|were|do|does|did|the|a|an|of|to|in|on|for|and|or|its|their|based|"
+                   r"should|would|could|fund|prefer|vs\.?|versus|10-?ks?|fy\s?2021|compare|between)\b", re.I)
+
+
+def _reformulate(t: dict, state: dict) -> str:
+    """Rewrite a sub-question whose first search came back weak (agentic RAG: decide to search again)."""
+    if _use_llm(state):
+        try:
+            from .llm import chat
+
+            q = chat(prompts.REFORMULATE_SYSTEM, f"Company: {t['company']}\nSub-question: {t['question']}", temperature=0.0)
+            q = q.strip().strip('"').splitlines()[0]
+            if 3 <= len(q) <= 300:
+                return q
+        except Exception:
+            pass
+    hint = dict(TOPICS).get(t.get("topic", ""), "")
+    keywords = " ".join(w for w in _STOP.sub(" ", t["question"]).split() if len(w) > 2)
+    return f"{t['company']} 10-K {keywords} {hint}".strip()
+
+
+def _research_again(state: dict, results: list) -> tuple[list, int]:
+    """Re-search any sub-question with too few hits or a low top score, then keep the best passages."""
+    weak = [i for i, (_, hits) in enumerate(results)
+            if len(hits) < config.RESEARCH_RETRY_MIN_HITS or max((e["score"] for e in hits), default=0) < config.RESEARCH_RETRY_MIN_SCORE]
+    results = list(results)
+    for i in weak:
+        t, hits = results[i]
+        more = search_filings(_reformulate(t, state), company=t["company"], k=config.EVIDENCE_PER_TOPIC, topic=t["topic"])
+        merged = {e["chunk_id"]: e for e in hits + more}
+        results[i] = (t, sorted(merged.values(), key=lambda e: -e["score"])[: config.EVIDENCE_PER_TOPIC])
+    return results, len(weak)
 
 
 # ---------------------------------------------------------------- quant
@@ -594,6 +634,9 @@ def human_review(state: dict) -> dict:
     if not isinstance(decision, dict):
         decision = {"action": str(decision)}
     action = decision.get("action", "approve")
+    from .observability import log_feedback
+
+    log_feedback(state, decision)
     update: dict[str, Any] = {"review": decision}
     if action == "follow_up" and decision.get("question"):
         update.update({"question": decision["question"], "attempts": 0, "bull_claims": [], "bear_claims": []})
@@ -610,7 +653,11 @@ def finalize(state: dict) -> dict:
     j = state.get("judge", {})
     MemoryStore().add_memo(state.get("user_id", "default"), state["question"], j.get("verdict", ""),
                            {s["company"]: s["conviction"] for s in j.get("scores", [])})
-    return {"final": True, **_trace("finalize", "memo approved and saved to long-term memory", t0)}
+    out = {"final": True, **_trace("finalize", "memo approved and saved to long-term memory", t0)}
+    from .observability import log_run
+
+    log_run({**state, "trace": state.get("trace", []) + out["trace"]})
+    return out
 
 
 def refuse(state: dict) -> dict:

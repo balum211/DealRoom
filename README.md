@@ -10,11 +10,21 @@ SEC 10-K filings, has a **Bull** agent and a **Bear** agent argue the case from 
 **Verifier** check every claim against the page it cites, and hands a **human reviewer** a one-page memo where
 every claim links back to its filing page.
 
-![DealRoom verdict and debate](docs/screenshots/02_verdict.png)
+![DealRoom home: an AI investment committee for SEC filings](docs/screenshots/01_home.png)
+
+![Committee verdict with agent pipeline and conviction scores](docs/screenshots/02_verdict.png)
 
 | Verifier catches a planted claim | Metrics from the filings' tables | Cited memo for human approval |
 |---|---|---|
 | ![debate](docs/screenshots/02_debate.png) | ![metrics](docs/screenshots/03_metrics.png) | ![memo](docs/screenshots/04_memo.png) |
+
+| Exact filing text behind every citation | Agent log: time, LLM calls, tokens and cost | Approved memo saved to memory |
+|---|---|---|
+| ![evidence](docs/screenshots/05_evidence.png) | ![agent log](docs/screenshots/08_agent_log.png) | ![approved](docs/screenshots/06_approved.png) |
+
+| Evaluation report | Course map: Weeks 1 to 5 in DealRoom |
+|---|---|
+| ![evaluation](docs/screenshots/07_evaluation.png) | ![course map](docs/screenshots/09_course_map.png) |
 
 ## Why it is agentic, not just RAG
 
@@ -48,7 +58,7 @@ flowchart LR
     H -- follow-up --> G
 ```
 
-More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Proposal: [docs/PROPOSAL.md](docs/PROPOSAL.md)
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Proposal: [docs/PROPOSAL.md](docs/PROPOSAL.md) · Course topics covered: [docs/COURSE_COVERAGE.md](docs/COURSE_COVERAGE.md)
 
 ## Results
 
@@ -62,16 +72,18 @@ Offline agents, no API key:
 | Researcher retrieval hit@5 (20 labelled questions) | **95%** | ≥ 90% |
 | Balanced debate (≥ 3 verified points per side) | **100%** | 100% |
 | Guardrail decisions correct | **8/8** | all |
-| Median time per memo | **12.6 s** | < 180 s |
+| Researcher retrieval MRR | **0.87** | ≥ 0.70 |
+| Median time per memo | **16.5 s** (p95 22.8 s) | < 180 s |
+| Estimated cost per memo (offline agents) | **$0** · tokens and cost are tracked per agent in LLM mode | < $0.05 |
 
 **Plain RAG (our Week 2 FilingSight) vs DealRoom on the same prompts:**
 
 | | Plain RAG | DealRoom |
 |---|---|---|
 | Shows both bull and bear evidence | 0% | 100% |
-| Distinct filing pages cited per answer | 4.7 | 7.3 |
+| Distinct filing pages cited per answer | 4.7 | 7.5 |
 | Every claim checked against its source | no | yes (100% supported) |
-| Median seconds | 2.7 | 12.6 |
+| Median seconds | 3.5 | 16.5 |
 
 Full report: [eval/results/summary.md](eval/results/summary.md). Each committee run includes a planted false claim
 ("revenue grew 250%…") so the Verifier → revise loop is exercised every time. Offline Bull and Bear claims are
@@ -152,4 +164,4 @@ Source documents are the public Uber Technologies and Lyft FY2021 Form 10-K fili
 
 ## Team 24
 
-Bala Mallampati, with Team 24 of The Gen Academy Mastering Agentic AI cohort (Austin, TX).
+Bala Mallampati, Ravindranath Konduru (Ravi), Deepthi Avula and Neha Madhao Pande: Team 24 of The Gen Academy Mastering Agentic AI cohort (Austin, TX).

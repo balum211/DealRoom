@@ -8,3 +8,5 @@ venv/
 .index/
 .DS_Store
 data/memory/
+data/traces/
+data/eval/feedback.jsonl

@@ -75,23 +75,26 @@ See [DEMO_SCRIPT.md](DEMO_SCRIPT.md) (about 2 minutes 30 seconds).
 
 ## Team and plan
 
+**Team 24:** Bala Mallampati, Ravindranath Konduru (Ravi), Deepthi Avula and Neha Madhao Pande.
+
 | Workstream | Owner |
 |---|---|
 | LangGraph orchestration, agents, memory | Bala Mallampati |
-| Data ingestion, retrieval, MCP server | Team 24 (fill in) |
-| Streamlit UI | Team 24 (fill in) |
-| Evaluation, guardrails | Team 24 (fill in) |
-| Demo video, Demo Day slides | Team 24 (fill in) |
+| Data ingestion, retrieval, MCP server | All four (shared) |
+| Streamlit UI | All four (shared) |
+| Evaluation, guardrails | All four (shared) |
+| Demo video, Demo Day slides | All four (shared) |
 
-1. **Nov 6:** working app on GitHub, README, demo video, form submitted by 11:59 pm PT.
-2. **Nov 7 to 8:** run the LLM-mode evaluation with a key, polish prompts. Shortlist announced Nov 8.
+1. **Nov 6 (done):** full committee graph, MCP server, human approval, memory, Streamlit UI and eval suite with cost and latency tracking. Today: record the demo video and submit the form by 11:59 pm PT.
+2. **Nov 7 to 8:** run the eval with the LLM agents and an API key to measure real tokens and cost per memo, tune prompts, rehearse. Shortlist announced Nov 8.
 3. **Nov 9 to 10 (if shortlisted):** add FY2022 and FY2023 filings, more companies, live Demo Day rehearsal.
 
 | Risk | Fallback |
 |---|---|
-| LLM slow or rate-limited on stage | Offline agents run the same graph with no key |
-| Agents loop or overspend | Hard caps on retries and debate rounds |
-| PDF tables parse badly | Quant reads named table rows and is tested against the printed values |
+| LLM slow or rate limited on stage | Offline agents run the same graph with no key; a recorded run as backup |
+| First run slow on a laptop while the search index warms up | Run one question before going on stage; provider and model are configurable, including a local Ollama model |
+| Agents loop or overspend | Hard caps on Verifier retries and debate rounds; tokens and cost tracked per agent |
+| PDF tables parse badly | Quant reads named table rows and is tested against the printed figures (12 of 12 match) |
 
 **Future work:** live EDGAR fetch for any ticker, earnings-call transcripts, a "compare five companies" mode,
 Slack delivery of approved memos.
