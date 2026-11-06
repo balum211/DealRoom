@@ -77,13 +77,14 @@ See [DEMO_SCRIPT.md](DEMO_SCRIPT.md) (about 2 minutes 30 seconds).
 
 **Team 24:** Bala Mallampati, Ravindranath Konduru (Ravi), Deepthi Avula and Neha Madhao Pande.
 
-| Workstream | Owner |
+One owner per workstream; everyone reviews and rehearses the demo.
+
+| Team member | Owns |
 |---|---|
-| LangGraph orchestration, agents, memory | Bala Mallampati |
-| Data ingestion, retrieval, MCP server | All four (shared) |
-| Streamlit UI | All four (shared) |
-| Evaluation, guardrails | All four (shared) |
-| Demo video, Demo Day slides | All four (shared) |
+| **Bala Mallampati** | LangGraph orchestration, agents, human review and memory |
+| **Ravindranath Konduru** | Data ingestion, chunking, hybrid retrieval and the MCP filing server |
+| **Deepthi Avula** | Streamlit UI, live debate view, README and the demo video |
+| **Neha Madhao Pande** | Evaluation set, LLM judge, guardrails and the Demo Day slides |
 
 1. **Nov 6 (done):** full committee graph, MCP server, human approval, memory, Streamlit UI and eval suite with cost and latency tracking. Today: record the demo video and submit the form by 11:59 pm PT.
 2. **Nov 7 to 8:** run the eval with the LLM agents and an API key to measure real tokens and cost per memo, tune prompts, rehearse. Shortlist announced Nov 8.
