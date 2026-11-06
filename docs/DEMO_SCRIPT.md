@@ -3,14 +3,14 @@
 **Setup before recording**
 1. `run.bat` (or `streamlit run app.py`), wait for the page to load.
 2. Run the first example once so the index is warm, then refresh.
-3. Sidebar: reviewer name `demo`, mandate **growth**, turn on **Stress test: inject a false claim**.
+3. Sidebar: reviewer name `demo`, mandate **growth**, turn on **🧪 Stress test: plant a false claim**.
 4. Record the browser window with Windows `Win + Alt + R` (Xbox Game Bar) or OBS / Loom. Upload the file to
    Google Drive and set sharing to "Anyone with the link can view".
 
 | Time | On screen | Say |
 |---|---|---|
 | 0:00 to 0:15 | App title | "We're Team 24. This is DealRoom, an AI investment committee that turns SEC filings into a cited, debated memo in seconds." |
-| 0:15 to 0:30 | Click example 1: "Should a growth fund prefer Uber or Lyft…", then **Convene the committee** | "One question in. A guardrail checks it, and a Planner splits it into growth, profitability, cash, risk and strategy questions for each company." |
+| 0:15 to 0:30 | Click the **⚖️ Uber vs Lyft** scenario, then **🚀 Convene** | "One question in. A guardrail checks it, and a Planner splits it into growth, profitability, cash, risk and strategy questions for each company." |
 | 0:30 to 0:55 | Timeline: Researcher and Quant finish | "A Researcher searches both 10-Ks in parallel using hybrid search, and the same tools are exposed as an MCP server. A Quant agent reads twelve figures straight from the filings' tables." |
 | 0:55 to 1:25 | **Debate** tab: Bull and Bear columns, rebuttal | "Now a Bull and a Bear argue opposite cases from the same evidence, and then rebut each other." |
 | 1:25 to 1:45 | Scroll to the red "rejected" claim B0 and its replacement | "We planted a false claim: revenue grew 250 percent. The Verifier caught that the quote isn't on the cited page, sent it back, and the Bull replaced it with a supported one." |

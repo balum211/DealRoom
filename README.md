@@ -10,7 +10,11 @@ SEC 10-K filings, has a **Bull** agent and a **Bear** agent argue the case from 
 **Verifier** check every claim against the page it cites, and hands a **human reviewer** a one-page memo where
 every claim links back to its filing page.
 
-![DealRoom debate view](docs/screenshots/02_debate.png)
+![DealRoom verdict and debate](docs/screenshots/02_verdict.png)
+
+| Verifier catches a planted claim | Metrics from the filings' tables | Cited memo for human approval |
+|---|---|---|
+| ![debate](docs/screenshots/02_debate.png) | ![metrics](docs/screenshots/03_metrics.png) | ![memo](docs/screenshots/04_memo.png) |
 
 ## Why it is agentic, not just RAG
 
@@ -94,8 +98,8 @@ streamlit run app.py
   `data/processed/`, so the app is ready in seconds after that.
 
 ### Try it
-1. Click **Should a growth fund prefer Uber or Lyft…** and **Convene the committee**.
-2. Turn on **Stress test: inject a false claim** in the sidebar to watch the Verifier reject it.
+1. Click the **⚖️ Uber vs Lyft** scenario and **🚀 Convene**.
+2. Turn on **🧪 Stress test: plant a false claim** in the sidebar to watch the Verifier reject it.
 3. Switch the mandate from **growth** to **conservative** and run again: the Judge's conviction changes.
 4. **Approve** the memo, then see it appear under **Memory** in the sidebar.
 
@@ -124,6 +128,7 @@ python eval/run_eval.py --mode auto   # evaluate the LLM agents (needs a key)
 
 ```
 app.py                     Streamlit UI (committee, evaluation, how it works)
+src/dealroom/ui.py         theme CSS and HTML components (dark boardroom design)
 src/dealroom/
   graph.py                 LangGraph state machine + DealRoom wrapper (stream, resume, run)
   agents.py                Guard, Planner, Researcher, Quant, Bull, Bear, Rebuttal, Verifier, Revise, Judge, Writer, Human review

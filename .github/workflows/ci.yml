@@ -23,7 +23,7 @@ jobs:
           from streamlit.testing.v1 import AppTest
           at = AppTest.from_file("app.py", default_timeout=600).run()
           assert not at.exception, at.exception
-          [b for b in at.button if b.label == "Convene the committee"][0].click().run()
+          [b for b in at.button if "Convene" in b.label][0].click().run()
           assert not at.exception, at.exception
           assert [m for m in at.metric], "no conviction scores rendered"
           print("ok")

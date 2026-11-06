@@ -519,6 +519,7 @@ def _offline_memo(state: dict) -> str:
     for s in j["scores"]:
         lines.append(f"| {s['company']} | **{s['conviction']}** | {s['supported_bull']} | {s['supported_bear']} | "
                      f"{s['metrics_improved']}/{s['metrics_total']} |")
+    lines.append("")
     for sc in j["scores"]:
         if sc.get("still_loss_making"):
             lines.append(f"*{sc['company']} improved on most metrics but is still negative on: {', '.join(sc['still_loss_making'])}.*")
