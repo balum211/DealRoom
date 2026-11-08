@@ -140,7 +140,7 @@ python eval/run_eval.py --mode auto   # evaluate the LLM agents (needs a key)
 
 ```
 app.py                     Streamlit UI (committee, evaluation, how it works)
-src/dealroom/ui.py         theme CSS and HTML components (dark boardroom design)
+src/dealroom/ui.py         theme CSS and HTML components (light theme per ai-design-skills)
 src/dealroom/
   graph.py                 LangGraph state machine + DealRoom wrapper (stream, resume, run)
   agents.py                Guard, Planner, Researcher, Quant, Bull, Bear, Rebuttal, Verifier, Revise, Judge, Writer, Human review
