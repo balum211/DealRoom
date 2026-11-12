@@ -108,7 +108,7 @@ class DealRoom:
 
     @staticmethod
     def new_thread() -> dict:
-        # run_name and tags label the run in LangSmith when LANGSMITH_TRACING=true
+        # run_name and tags label the run in LangGraph's own run config
         return {"configurable": {"thread_id": str(uuid.uuid4())}, "run_name": "DealRoom committee", "tags": ["dealroom"]}
 
     def stream(self, inputs: dict | Command, config: dict):

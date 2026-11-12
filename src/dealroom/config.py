@@ -34,8 +34,17 @@ AGENT_MODE = os.getenv("DR_AGENT_MODE", "auto")
 
 # Token prices (USD per 1M tokens) used to estimate cost per memo. Set these to your provider's
 # current rates; local models (Ollama) cost 0 per call.
-PRICE_IN_PER_M = float(os.getenv("DR_PRICE_IN_PER_M", 0.13))
-PRICE_OUT_PER_M = float(os.getenv("DR_PRICE_OUT_PER_M", 0.40))
+PRICE_IN_PER_M = float(os.getenv("DR_PRICE_IN_PER_M", 0))  # the free model costs nothing
+PRICE_OUT_PER_M = float(os.getenv("DR_PRICE_OUT_PER_M", 0))
+
+# Which agents call the free model. Its free tier allows one reply every 45 seconds, so by default
+# only the Writer uses it (one call per run) and the other agents run offline. "all" lets every
+# agent call it (useful with your own OpenAI-compatible endpoint via FS_LLM_URL).
+LLM_AGENTS = {a.strip() for a in os.getenv("DR_LLM_AGENTS", "writer").lower().split(",") if a.strip()}
+
+
+def agent_uses_llm(agent: str) -> bool:
+    return "all" in LLM_AGENTS or agent in LLM_AGENTS
 
 # Agentic retrieval: re-search a sub-question with a reformulated query when the first pass looks weak.
 RESEARCH_RETRY_MIN_HITS = int(os.getenv("DR_RESEARCH_RETRY_MIN_HITS", 3))
@@ -59,15 +68,11 @@ def llm_enabled(mode: str | None = None) -> bool:
 
 def is_local_model() -> bool:
     """True when the OpenAI-compatible endpoint is a local server such as Ollama."""
-    return any(h in (fs_config.LLM_BASE_URL or "") for h in ("localhost", "127.0.0.1", ":11434"))
-
-
-def tracing_enabled() -> bool:
-    return os.getenv("LANGSMITH_TRACING", os.getenv("LANGCHAIN_TRACING_V2", "")).lower() == "true" and bool(
-        os.getenv("LANGSMITH_API_KEY") or os.getenv("LANGCHAIN_API_KEY"))
+    return any(h in (fs_config.LLM_URL or "") for h in ("localhost", "127.0.0.1", ":11434"))
 
 
 def llm_label() -> str:
     if not fs_config.llm_available():
-        return "offline agents (no API key)"
-    return f"{fs_config.LLM_MODEL}" + (" (local, Ollama)" if is_local_model() else "")
+        return "offline agents (FS_LLM=off)"
+    who = "all agents" if "all" in LLM_AGENTS else ", ".join(sorted(LLM_AGENTS)).title()
+    return f"{fs_config.LLM_MODEL_LABEL}, no API key ({who})" + (" (local, Ollama)" if is_local_model() else "")

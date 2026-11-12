@@ -87,7 +87,7 @@ Offline agents, no API key:
 
 Full report: [eval/results/summary.md](eval/results/summary.md). Each committee run includes a planted false claim
 ("revenue grew 250%…") so the Verifier → revise loop is exercised every time. Offline Bull and Bear claims are
-exact quotes, so their faithfulness is high by design; with an API key, run `python eval/run_eval.py --mode auto`
+exact quotes, so their faithfulness is high by design; with the free model, run `python eval/run_eval.py --mode auto`
 to measure the LLM-written claims the same way.
 
 ## Quick start
@@ -99,13 +99,15 @@ to measure the LLM-written claims the same way.
 # or manually:
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env                                    # optional: add NEBIUS_API_KEY or OPENAI_API_KEY
+cp .env.example .env                                    # optional; no API key is ever needed
 streamlit run app.py
 ```
 
-- **No API key needed.** Without a key, deterministic offline agents run the full graph (extractive claims,
-  rule-based verification, template memo). With `NEBIUS_API_KEY` or `OPENAI_API_KEY` set, the Planner, Bull,
-  Bear, Rebuttal, Verifier judge and Writer become LLM calls, and any LLM failure falls back to the offline agent.
+- **No API key, ever.** Deterministic offline agents run the full graph (extractive claims, rule-based
+  verification), and the Writer drafts the memo with **GPT-OSS 20B**, an open-weights model, through a free
+  endpoint that needs no account or key. Its free tier allows one reply every 45 seconds, so only the Writer uses
+  it by default; if it is busy the Writer falls back to the template memo. `DR_LLM_AGENTS=all` lets every agent
+  use the model (best with a local Ollama model, see `.env.example`); `FS_LLM=off` keeps everything offline.
 - First start downloads the 80 MB MiniLM ONNX embedding model once. The search index is committed in
   `data/processed/`, so the app is ready in seconds after that.
 

@@ -1,7 +1,8 @@
 """The DealRoom agents. Each node reads and writes the shared LangGraph state.
 
 Every agent has two implementations:
-* LLM mode (when NEBIUS_API_KEY or OPENAI_API_KEY is set): the chat model plans, argues and writes.
+* LLM mode (no API key): the free open-weights model (GPT-OSS 20B) writes the memo; set DR_LLM_AGENTS=all to let it
+  plan, argue and check too (needs an endpoint without the free tier's one-reply-per-45-seconds limit).
 * Offline mode: deterministic, extractive agents that need no key. The demo, the tests and
   CI all run end to end with no API cost, and LLM failures fall back to these.
 """
@@ -46,8 +47,8 @@ _FAULTY_TEXT = "Revenue grew 250% in 2021 to $45 billion, so the company is alre
 
 
 # ---------------------------------------------------------------- helpers
-def _use_llm(state: dict) -> bool:
-    return config.llm_enabled(state.get("mode"))
+def _use_llm(state: dict, agent: str = "") -> bool:
+    return config.llm_enabled(state.get("mode")) and config.agent_uses_llm(agent)
 
 
 def _trace(node: str, summary: str, t0: float, **extra) -> dict:
@@ -119,7 +120,7 @@ def planner(state: dict) -> dict:
     named = [c for c in config.COMPANIES if re.search(rf"\b{c}\b", q, re.I)]
     companies = named or list(config.COMPANIES)
     topics, how = None, "offline"
-    if _use_llm(state):
+    if _use_llm(state, "planner"):
         try:
             data = prompts_call_planner(q, companies)
             topics = [t for t in data if t.get("company") in companies and t.get("question")][: 2 * config.MAX_TOPICS + 2]
@@ -187,7 +188,7 @@ _STOP = re.compile(r"\b(what|which|how|why|is|are|was|were|do|does|did|the|a|an|
 
 def _reformulate(t: dict, state: dict) -> str:
     """Rewrite a sub-question whose first search came back weak (agentic RAG: decide to search again)."""
-    if _use_llm(state):
+    if _use_llm(state, "researcher"):
         try:
             from .llm import chat
 
@@ -312,7 +313,7 @@ def _llm_claims(state: dict, side: str, n: int) -> list[dict]:
 
 def _make_claims(state: dict, side: str) -> tuple[list[dict], str]:
     n = config.CLAIMS_PER_SIDE
-    if _use_llm(state):
+    if _use_llm(state, "debaters"):
         try:
             claims = _llm_claims(state, side, n)
             if claims:
@@ -349,7 +350,7 @@ def rebuttal(state: dict) -> dict:
     bulls, bears = state.get("bull_claims", []), state.get("bear_claims", [])
     how = "offline"
     result = None
-    if _use_llm(state) and bulls and bears:
+    if _use_llm(state, "rebuttal") and bulls and bears:
         try:
             from .llm import chat_json
 
@@ -409,7 +410,7 @@ def verifier(state: dict) -> dict:
         c["status"], c["reason"] = ("supported" if ok else "unsupported"), reason
     how = "rules"
     llm_checked = [c for c in pending if c["status"] == "supported" and c["by"] == "llm"]
-    if llm_checked and _use_llm(state):
+    if llm_checked and _use_llm(state, "verifier"):
         try:
             from .llm import chat_json
 
@@ -451,7 +452,7 @@ def revise(state: dict) -> dict:
             continue
         keep = [c for c in claims if c["status"] != "unsupported"]
         new: list[dict] = []
-        if _use_llm(state) and any(c["by"] == "llm" for c in failed):
+        if _use_llm(state, "debaters") and any(c["by"] == "llm" for c in failed):
             try:
                 from .llm import chat_json
 
@@ -599,7 +600,7 @@ def writer(state: dict) -> dict:
     t0 = time.perf_counter()
     how = "offline"
     memo = None
-    if _use_llm(state):
+    if _use_llm(state, "writer"):
         try:
             from .llm import chat
 

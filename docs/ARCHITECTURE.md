@@ -45,6 +45,7 @@ flowchart LR
 follow up. Long-term: a per-reviewer store (`data/memory/store.json`) keeps the investing mandate, preferred
 metrics and summaries of approved memos; the Judge and Writer read it.
 
-**Two agent modes.** With `NEBIUS_API_KEY` (or `OPENAI_API_KEY`) the Planner, Bull, Bear, Rebuttal, Verifier
-judge and Writer are LLM calls. Without a key, deterministic offline agents run the same graph, so the demo,
-tests and CI never depend on an API. Any LLM failure falls back to the offline agent for that step.
+**Two agent modes, no API key in either.** In `auto` the Writer drafts the memo with GPT-OSS 20B (open weights)
+through a free keyless endpoint, and the other agents run offline; `DR_LLM_AGENTS=all` makes the Planner, Bull,
+Bear, Rebuttal, Verifier judge and Writer all LLM calls (best with a local Ollama model). In `offline` every agent
+is deterministic, so the demo, tests and CI never depend on an API. Any LLM failure falls back to the offline agent.

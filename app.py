@@ -61,10 +61,10 @@ with st.sidebar:
     st.markdown("#### Run options")
     llm_ok = config.llm_enabled("auto")
     mode = st.segmented_control("Agents", ["auto", "offline"], default="auto",
-                                help="auto = LLM agents when an API key is set, otherwise offline agents.") or "auto"
+                                help="auto = the Writer drafts the memo with the free open-weights model (no API key); "
+                                     "offline = every agent runs offline.") or "auto"
     st.caption(f"Engine: **{config.llm_label() if llm_ok and mode == 'auto' else 'offline agents (no key needed)'}**")
-    st.caption("Tracing: **LangSmith on**" if config.tracing_enabled()
-               else "Tracing: **local run log** (set LANGSMITH_TRACING=true for LangSmith)")
+    st.caption("Tracing: **local run log** (data/traces/runs.jsonl)")
     inject = st.toggle("Stress test: plant a false claim", value=False,
                        help="Adds a made-up Bull claim ('revenue grew 250%') to show the Verifier catching it.")
     via_mcp = st.toggle("Researcher uses the MCP server", value=False,

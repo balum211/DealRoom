@@ -81,21 +81,20 @@ MIN_CONFIDENCE_CE = _env_float("FS_MIN_CONFIDENCE_CE", 0.05)  # cross-encoder si
 # Default strategy used by the app (the evaluation picks the winner).
 DEFAULT_CHUNKING = os.getenv("FS_CHUNKING", "semantic")
 
-# LLM (OpenAI-compatible). Nebius is the default provider for the course.
-NEBIUS_API_KEY = os.getenv("NEBIUS_API_KEY", "")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-LLM_BASE_URL = os.getenv("FS_LLM_BASE_URL", "https://api.studio.nebius.com/v1/" if NEBIUS_API_KEY else "")
-LLM_MODEL = os.getenv("FS_LLM_MODEL", "meta-llama/Llama-3.3-70B-Instruct" if NEBIUS_API_KEY else "gpt-4.1-mini")
+# Answer model: GPT-OSS 20B (open weights, Apache 2.0) through Pollinations' free anonymous
+# OpenAI-compatible endpoint. No account and no API key. FS_LLM=off turns it off.
+LLM_URL = os.getenv("FS_LLM_URL", "https://text.pollinations.ai/openai")
+LLM_MODEL = os.getenv("FS_LLM_MODEL", "openai")  # Pollinations alias for GPT-OSS 20B
+LLM_MODEL_LABEL = os.getenv("FS_LLM_LABEL", "GPT-OSS 20B (open weights)")
 JUDGE_MODEL = os.getenv("FS_JUDGE_MODEL", LLM_MODEL)
-LLM_TIMEOUT = _env_float("FS_LLM_TIMEOUT", 60)
+LLM_TIMEOUT = _env_float("FS_LLM_TIMEOUT", 45)
+LLM_MIN_INTERVAL = float(os.getenv("FS_LLM_MIN_INTERVAL", "0"))  # seconds between calls (batch jobs)
+LLM_ENABLED = os.getenv("FS_LLM", "free").lower() not in {"off", "0", "false", "no"}
 
 # Latency budget from the one-liner (seconds, end to end).
 LATENCY_BUDGET_S = _env_float("FS_LATENCY_BUDGET_S", 8)
 
 
-def llm_api_key() -> str:
-    return NEBIUS_API_KEY or OPENAI_API_KEY
-
 
 def llm_available() -> bool:
-    return bool(llm_api_key())
+    return LLM_ENABLED

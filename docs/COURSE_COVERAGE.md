@@ -9,7 +9,7 @@ during the demo. **✅ shown** = visible in the app or eval. **◐ partial** = p
 | Topic | Status | Where in DealRoom |
 |---|---|---|
 | Tokens, cost and context windows | ✅ | Every agent records LLM calls, tokens in/out and estimated cost. See the **Agent log** tab and the eval report's cost per memo. Prices are set in `.env` (`DR_PRICE_*`) |
-| Model selection, open vs closed, OpenAI-compatible APIs | ✅ | One client for Nebius (Llama 3.3 70B), OpenAI or a local Ollama model: change only `FS_LLM_BASE_URL` / `FS_LLM_MODEL` |
+| Model selection, open vs closed, OpenAI-compatible APIs | ✅ | Open-weights models only, no API key: GPT-OSS 20B through a free endpoint by default, or a local Ollama model by changing `FS_LLM_URL` / `FS_LLM_MODEL` |
 | Non-determinism | ✅ | LLM agents run at low temperature (0 for the Verifier, 0.4 at most). Offline agents are fully deterministic, so tests and CI are reproducible |
 | Prompt anatomy, prompt as procedure | ✅ | Role, task, constraints and output schema per agent in `src/dealroom/prompts.py` |
 | Agent harness: loop, context, tools, guardrails, verification, error recovery | ✅ | LangGraph loop, tool access through MCP, step limits (`DR_MAX_VERIFY_RETRIES`), the Verifier checks every claim, and any failed LLM call falls back to the offline agent |
@@ -52,7 +52,7 @@ during the demo. **✅ shown** = visible in the app or eval. **◐ partial** = p
 | Golden dataset and offline evals | ✅ | `eval/run_eval.py`: labelled retrieval questions, Quant figures checked against the filing, guardrail cases, committee runs |
 | LLM as judge | ✅ | In LLM mode the Verifier adds an LLM judge on top of the rule checks |
 | Cost and latency as eval dimensions | ✅ | Median and p95 seconds, tokens and estimated cost per memo in the eval report |
-| Tracing and observability | ✅ | Every run's agent trace is written to `data/traces/runs.jsonl`. Set `LANGSMITH_TRACING=true` to send full traces to LangSmith (the sidebar shows when it is on) |
+| Tracing and observability | ✅ | Every run's agent trace is written to `data/traces/runs.jsonl`. The trace stays local, so no tracing service or key is needed (the sidebar shows it is on) |
 | Turning logs into eval cases, feedback loop | ✅ | Every human review decision is logged to `data/eval/feedback.jsonl`. `python eval/run_eval.py --feedback` replays those requests as regression cases |
 | Regression testing and CI | ✅ | 32 pytest tests and the eval run offline with no API key, so they are reproducible and CI ready |
 | Baseline comparison | ✅ | Plain RAG (Week 2 FilingSight) vs the DealRoom committee on the same prompts |
