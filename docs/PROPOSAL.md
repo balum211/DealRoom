@@ -46,7 +46,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the graph and the agent table.
 | Layer | Choice |
 |---|---|
 | Orchestration | LangGraph: parallel fan-out (Researcher + Quant, Bull + Bear), conditional retry loop, interrupt for human review, checkpointer |
-| LLM | Any OpenAI-compatible model via LangChain (Nebius Llama-3.3-70B by default); deterministic offline agents when no key is set |
+| LLM | Open-weights GPT-OSS 20B through a free endpoint (no API key) for the Writer, or a local Ollama model for every agent; deterministic offline agents otherwise |
 | Retrieval | Reused from our Week 2 project FilingSight: semantic chunks, Chroma (MiniLM ONNX) + BM25, Reciprocal Rank Fusion, local reranker, company filters |
 | Data | Uber and Lyft FY2021 Form 10-K (SEC EDGAR), 1,767 chunks with company, page and 10-K Item metadata |
 | Tools | MCP server (`dealroom-filings`): `search_filings`, `get_page`, `list_companies`, `key_metrics`, `compute_change` |
@@ -87,7 +87,7 @@ One owner per workstream; everyone reviews and rehearses the demo.
 | **Neha Madhao Pande** | Evaluation set, LLM judge, guardrails and the Demo Day slides |
 
 1. **Nov 6 (done):** full committee graph, MCP server, human approval, memory, Streamlit UI and eval suite with cost and latency tracking. Today: record the demo video and submit the form by 11:59 pm PT.
-2. **Nov 7 to 8:** run the eval with the LLM agents and an API key to measure real tokens and cost per memo, tune prompts, rehearse. Shortlist announced Nov 8.
+2. **Nov 7 to 8:** run the eval with the LLM agents to measure real tokens and cost per memo, tune prompts, rehearse. Shortlist announced Nov 8.
 3. **Nov 9 to 10 (if shortlisted):** add FY2022 and FY2023 filings, more companies, live Demo Day rehearsal.
 
 | Risk | Fallback |

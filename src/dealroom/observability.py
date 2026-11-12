@@ -1,7 +1,7 @@
 """Run logs and the human feedback loop.
 
 * Every finished run appends its agent trace (per node: time, LLM calls, tokens, cost) to
-  ``data/traces/runs.jsonl``. LangSmith tracing turns on on top of this when LANGSMITH_TRACING=true.
+  ``data/traces/runs.jsonl`` (no external tracing service, so no key).
 * Every human review decision (approve, revise, follow up) is appended to ``data/eval/feedback.jsonl``.
   ``python eval/run_eval.py --feedback`` replays those requests as regression cases.
 """

@@ -10,3 +10,4 @@ venv/
 data/memory/
 data/traces/
 data/eval/feedback.jsonl
+st.log

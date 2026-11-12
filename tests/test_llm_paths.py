@@ -26,6 +26,7 @@ def fake_llm(monkeypatch):
 
     monkeypatch.setattr(llm_mod, "chat", fake_chat)
     monkeypatch.setattr(config, "llm_enabled", lambda mode=None: True)
+    monkeypatch.setattr(config, "LLM_AGENTS", {"all"})
     return replies
 
 
@@ -53,3 +54,25 @@ def test_llm_failure_falls_back_to_offline(fake_llm):
     state = _state()
     out = agents.bear(state)  # no fake reply registered for the Bear -> exception -> offline
     assert "offline" in out["trace"][0]["summary"]
+
+
+def test_no_api_key_settings_remain():
+    from filingsight import config as fs_config
+
+    for name in ("NEBIUS_API_KEY", "OPENAI_API_KEY", "LLM_BASE_URL"):
+        assert not hasattr(fs_config, name)
+    assert "llama" not in fs_config.LLM_MODEL.lower()
+
+
+def test_only_the_writer_uses_the_free_model_by_default():
+    assert config.agent_uses_llm("writer")
+    assert not config.agent_uses_llm("bull") and not config.agent_uses_llm("planner")
+
+
+def test_langchain_messages_map_to_chat_roles():
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    from filingsight.llm import FreeChatModel
+
+    chat = FreeChatModel._to_chat([SystemMessage(content="rules"), HumanMessage(content="q")])
+    assert chat == [{"role": "system", "content": "rules"}, {"role": "user", "content": "q"}]

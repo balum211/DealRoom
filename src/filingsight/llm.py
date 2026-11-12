@@ -1,25 +1,167 @@
-"""Chat model factory. Nebius AI Studio (OpenAI-compatible) by default, any
-OpenAI-compatible endpoint via FS_LLM_BASE_URL, or OpenAI with OPENAI_API_KEY."""
+"""Answer model with no API key: GPT-OSS 20B (open weights, Apache 2.0) through the free
+anonymous tier of Pollinations' OpenAI-compatible endpoint.
+
+No account, no key, nothing to configure. The endpoint is a free community service with
+rate limits, so every failure (rate limit, timeout, outage) falls back to extractive
+mode (the top cited sentences) and the app says why.
+
+`get_chat_model()` returns an object with LangChain's `.invoke(messages) -> .content`
+shape, so the LangGraph flow does not change.
+"""
 from __future__ import annotations
 
-from functools import lru_cache
+import re
+import time
+from dataclasses import dataclass
+from types import SimpleNamespace
 
 from . import config
 
+_FULLWIDTH_CITE = re.compile(r"【\s*(\d+)[^】]*】")
+_DUP_CITE = re.compile(r"\[(\d+)\]([.!?,;]?)\s*\[\1\]")
+_STRAY_CITE = re.compile(r"(\[\d+\])([.!?])\s*(\[\d+\])(?=\s|$)")
+_RETRY_AFTER = re.compile(r"retry after (\d+)\s*s", re.I)
 
-@lru_cache(maxsize=4)
+
+class FreeLimitError(RuntimeError):
+    """The anonymous tier allows one reply every 45 seconds per IP address."""
+
+    def __init__(self, retry_after: int | None):
+        self.retry_after = retry_after
+        super().__init__(f"free limit reached, retry after {retry_after}s" if retry_after else "free limit reached")
+
+
+def clean_answer(text: str) -> str:
+    """Turn 【1】 into [1] and collapse a repeated marker such as "[1]. [1]" into "[1]."."""
+    text = _FULLWIDTH_CITE.sub(r"[\1]", text)
+    while True:
+        new = _STRAY_CITE.sub(r"\1\3\2", _DUP_CITE.sub(r"[\1]\2", text))
+        if new == text:
+            return text.strip()
+        text = new
+
+
+@dataclass
+class LLMStatus:
+    ok: bool
+    provider: str
+    model: str
+    message: str
+    loaded: bool = False
+
+
+class FreeChatModel:
+    """Minimal OpenAI-compatible chat client (requests only, no key).
+
+    FS_LLM_MIN_INTERVAL (seconds) spaces out calls, for batch jobs such as the answer
+    evaluation that must stay inside the free tier's one reply per 45 seconds.
+    """
+
+    _last_call = 0.0
+    paced_seconds = 0.0  # total time spent waiting for the interval (excluded from eval latency)
+
+    def __init__(self, url: str, model: str, timeout: float):
+        self.url, self.model, self.timeout = url, model, timeout
+
+    @staticmethod
+    def _to_chat(messages) -> list[dict]:
+        if isinstance(messages, str):
+            return [{"role": "user", "content": messages}]
+        role_map = {"human": "user", "ai": "assistant"}
+        out = []
+        for m in messages:
+            r, c = (m.type, m.content) if hasattr(m, "type") and hasattr(m, "content") else m
+            out.append({"role": role_map.get(r, r), "content": c})
+        return out
+
+    def invoke(self, messages, max_tokens: int | None = None):
+        import requests
+
+        body = {"model": self.model, "messages": self._to_chat(messages), "seed": 42, "private": True}
+        if max_tokens:
+            body["max_tokens"] = max_tokens
+        wait = config.LLM_MIN_INTERVAL - (time.monotonic() - FreeChatModel._last_call)
+        if wait > 0:
+            FreeChatModel.paced_seconds += wait
+            time.sleep(wait)
+        FreeChatModel._last_call = time.monotonic()
+        last = None
+        for attempt in range(2):  # one retry for rate limits and blips
+            try:
+                r = requests.post(self.url, json=body, timeout=self.timeout)
+                if r.status_code == 402:
+                    m = _RETRY_AFTER.search(r.text)
+                    raise FreeLimitError(int(m.group(1)) if m else None)  # retrying now would fail too
+                if r.status_code == 429 and attempt == 0:
+                    time.sleep(3)
+                    continue
+                r.raise_for_status()
+                data = r.json()
+                text = data["choices"][0]["message"]["content"] or ""
+                usage = data.get("usage") or {}
+                return SimpleNamespace(content=clean_answer(text), usage_metadata={
+                    "input_tokens": int(usage.get("prompt_tokens", 0)), "output_tokens": int(usage.get("completion_tokens", 0))})
+            except FreeLimitError:
+                raise
+            except Exception as exc:  # noqa: BLE001 - retried once, then raised for the caller
+                last = exc
+                if attempt == 0:
+                    time.sleep(1)
+        raise last  # type: ignore[misc]
+
+
 def get_chat_model(temperature: float = 0.0, model: str | None = None):
+    """temperature is ignored: the free endpoint uses the model's default sampling with a fixed seed."""
     if not config.llm_available():
-        raise RuntimeError("No LLM key set. Add NEBIUS_API_KEY (or OPENAI_API_KEY) to .env.")
-    from langchain_openai import ChatOpenAI
+        raise RuntimeError(explain_unavailable())
+    return FreeChatModel(config.LLM_URL, model or config.LLM_MODEL, config.LLM_TIMEOUT)
 
-    kwargs = dict(
-        model=model or config.LLM_MODEL,
-        api_key=config.llm_api_key(),
-        temperature=temperature,
-        timeout=config.LLM_TIMEOUT,
-        max_retries=2,
-    )
-    if config.LLM_BASE_URL:
-        kwargs["base_url"] = config.LLM_BASE_URL
-    return ChatOpenAI(**kwargs)
+
+def explain_unavailable() -> str:
+    return "Written answers are switched off (FS_LLM=off)."
+
+
+def explain_error(exc: Exception) -> str:
+    """Turn a request error into a reason a person can act on."""
+    name = type(exc).__name__
+    text = str(exc)
+    low = text.lower()
+    if isinstance(exc, FreeLimitError):
+        wait = f" Try again in about {exc.retry_after} seconds." if exc.retry_after else " Try again in a minute."
+        return ("The free model allows one written answer every 45 seconds, and it was just used." + wait
+                + " This answer uses cited passages.")
+    if "429" in text or "rate" in low:
+        return "The free model is busy (rate limited). Try again in a few seconds; this answer uses cited passages."
+    if "timed out" in low or name in {"Timeout", "ReadTimeout", "ConnectTimeout"}:
+        return "The free model took too long to reply. This answer uses cited passages."
+    if "connection" in low or "resolve" in low or name == "ConnectionError":
+        return "Could not reach the free model (network). This answer uses cited passages."
+    if any(code in text for code in ("500", "502", "503", "504")):
+        return "The free model service is having problems right now. This answer uses cited passages."
+    return f"{name}: {text[:200]}"
+
+
+def check_llm(load: bool = False) -> LLMStatus:
+    """Report readiness. With load=True, send a tiny request to confirm the service answers.
+
+    The free tier allows one reply every 45 seconds, so the app never calls this with load=True
+    on its own; a check uses up the next answer.
+    """
+    if not config.llm_available():
+        return LLMStatus(False, "free", config.LLM_MODEL_LABEL, explain_unavailable())
+    if not load:
+        return LLMStatus(True, "free", config.LLM_MODEL_LABEL, "Ready", loaded=True)
+    try:
+        t = time.perf_counter()
+        get_chat_model().invoke("Reply with OK.")
+        return LLMStatus(True, "free", config.LLM_MODEL_LABEL, f"Answered in {time.perf_counter() - t:.1f}s", loaded=True)
+    except Exception as exc:  # noqa: BLE001 - every failure becomes a readable status
+        return LLMStatus(False, "free", config.LLM_MODEL_LABEL, explain_error(exc))
+
+
+def is_loaded() -> bool:
+    return True
+
+
+def reset() -> None:
+    """Nothing is cached; kept for API compatibility."""

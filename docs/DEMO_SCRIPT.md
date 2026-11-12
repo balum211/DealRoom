@@ -4,9 +4,8 @@
 1. `run.bat` (or `streamlit run app.py`), wait for the page to load.
 2. Run the first example once so the index is warm, then refresh.
 3. Sidebar: reviewer name `demo`, mandate **growth**, turn on **Stress test: plant a false claim**.
-4. Optional: add an API key to `.env` so the Agent log shows real token and cost numbers. For a local model,
-   use the Ollama lines in `.env.example`. For LangSmith traces, set `LANGSMITH_TRACING=true` and
-   `LANGSMITH_API_KEY` (the sidebar then says "Tracing: LangSmith on").
+4. No API key is needed. In `auto` mode the Writer uses the free GPT-OSS 20B model (one reply every 45 seconds,
+   so wait about a minute between runs). For every agent on a model, use the Ollama lines in `.env.example`.
 5. Record the browser window with Windows `Win + Alt + R` (Xbox Game Bar) or OBS / Loom. Upload the file to
    Google Drive and set sharing to "Anyone with the link can view".
 
@@ -27,6 +26,6 @@ Tips
 - If time is short, skip the Course map scroll and just say it is there.
 - The whole committee takes about 10 to 25 seconds on a laptop.
 - The Agent log shows 0 tokens and $0 with offline agents. Say "offline agents need no API key, so this run is free",
-  or record with an API key to show real numbers.
+  or point out the Writer's one model call and its token count.
 - To show a re-search on screen, use the **Cash burn** or **Uber profitability** scenario: the Researcher line in
   the Agent log then says how many weak results were searched again.
